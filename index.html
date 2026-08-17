@@ -442,7 +442,7 @@
         <div class="brand-eyebrow">YOSHIDA EDTECH WORKS ／ EXAM</div>
         <div class="brand-title">介護福祉士 パート合格<br>Kaigo-Part</div>
       </div>
-      <button class="ruby-toggle on" id="rubyToggle">ふ ふりがな</button>
+      <button class="ruby-toggle on" id="rubyToggle">ふりがな</button>
     </div>
     <div class="brand-sub">A・B・Cの3パートに分けて、少しずつ合格を目指します。</div>
   </div>
@@ -493,6 +493,7 @@
       <div class="result-title">パートの演習が終わります</div>
       <div class="result-score"><b id="resultScore">0 / 0</b> 問正解します</div>
       <div class="result-actions">
+        <button class="start-btn" id="resultShare" style="border-color:var(--accent-fill); color:var(--accent-text);">📤 結果をシェアする</button>
         <button class="start-btn" id="resultRetry" style="border-color:var(--accent-fill);">同じパートをもう一度解く</button>
         <button class="answer-btn ready" id="resultBackTop">パート選択にもどる</button>
       </div>
@@ -919,7 +920,7 @@ const LEVEL_LABEL = {easy:"やさしい", medium:"ふつう", hard:"むずかし
 // 既存データの「漢字（かな）」表記を <ruby>漢字<rt>かな</rt></ruby> に自動変換する。
 // 対象データの多くが元々この括弧書きふりがな形式で作られているため、
 // kuromoji等の形態素解析なしで、正規表現の一括変換だけで安全にルビ化できる。
-const RUBY_PATTERN = /([\u4E00-\u9FFF]+[\u3040-\u309F]*)（([\u3040-\u30FF\u30FCー]+)）/g;
+const RUBY_PATTERN = /([\u4E00-\u9FFF\u30A0-\u30FF\u30FC]+[\u3040-\u309F]*)（([\u3040-\u30FF\u30FCー]+)）/g;
 
 function escapeHtml(str){
   return str
@@ -949,7 +950,7 @@ function applyRubyState(){
   const btn = document.getElementById("rubyToggle");
   if(btn){
     btn.classList.toggle("on", rubyOn);
-    btn.textContent = rubyOn ? "ふ ふりがな" : "ふ ふりがな OFF";
+    btn.textContent = rubyOn ? "ふりがな" : "ふりがな OFF";
   }
 }
 
@@ -1001,10 +1002,19 @@ function playCorrectTone(){ playTone([{t:0, d:0.32}]); }
 function playWrongTone(){ playTone([{t:0, d:0.12},{t:0.16, d:0.12}]); }
 
 /* ================= TTS ================= */
+function toSpeechText(text){
+  // TTS用テキスト：表示用の「漢字（かな）」括弧書きふりがなは、
+  // 音声合成エンジンが漢字を正しく読めるため不要。二重読み上げを防ぐため、
+  // 読み仮名の括弧部分だけを取り除き、漢字本体のみを残す。
+  return text
+    .replace(RUBY_PATTERN, (match, base, reading)=> base)
+    .replace(/【事例】/g, "事例。");
+}
+
 function speakJa(text){
   if(!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/【事例】/g,"事例。"));
+  const u = new SpeechSynthesisUtterance(toSpeechText(text));
   u.lang = "ja-JP";
   u.rate = 0.95;
   window.speechSynthesis.speak(u);
@@ -1187,6 +1197,32 @@ document.getElementById("resultBackTop").addEventListener("click", ()=>{
   renderTop();
   showScreen(screenTop);
 });
+
+/* ================= SHARE ================= */
+async function shareResult(){
+  const text = "介護福祉士 パート合格（Kaigo-Part）\n"
+    + currentPart + "パートを演習しました。正答数: " + correctCount + " / " + currentSet.length + "問\n"
+    + "#KaigoPart #介護福祉士 #パート合格";
+
+  if(navigator.share){
+    try{
+      await navigator.share({ title:"Kaigo-Part 演習結果", text: text });
+    }catch(e){
+      // ユーザーがキャンセルした場合などは何もしない
+    }
+    return;
+  }
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    try{
+      await navigator.clipboard.writeText(text);
+      window.alert("結果をコピーしました。LINEやMessengerに貼り付けて送れます。");
+      return;
+    }catch(e){}
+  }
+  window.alert(text);
+}
+document.getElementById("resultShare").addEventListener("click", shareResult);
 
 /* ================= INIT ================= */
 applyRubyState();
