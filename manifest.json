@@ -1,0 +1,23 @@
+{
+  "short_name": "KaigoPart",
+  "name": "介護福祉士 パート合格 | Kaigo Part",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#EFEAE0",
+  "theme_color": "#2E8B76",
+  "display": "standalone",
+  "orientation": "portrait"
+}
